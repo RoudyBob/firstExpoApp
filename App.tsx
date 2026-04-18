@@ -157,7 +157,6 @@ export default function App() {
       }));
       setForecast(days);
 
-      const currentHour = new Date().getHours();
       const allHours: HourForecast[][] = days.map((_, dayIndex) => {
         const start = dayIndex * 24;
         return weatherData.hourly.time
@@ -166,10 +165,7 @@ export default function App() {
             time,
             temp: Math.round(weatherData.hourly.temperature_2m[start + i]),
             weatherCode: weatherData.hourly.weathercode[start + i],
-          }))
-          .filter((h: HourForecast) =>
-            dayIndex !== 0 || parseInt(h.time.slice(11, 13), 10) >= currentHour
-          );
+          }));
       });
       setHourlyByDay(allHours);
       await AsyncStorage.setItem(LAST_ZIP_KEY, zip);
@@ -231,13 +227,17 @@ export default function App() {
           <View style={styles.todayCard}>
             <Text style={styles.todayTitle}>Today</Text>
             <View style={styles.hourlyContainer}>
-              {todayHours.map((h) => (
-                <View key={h.time} style={styles.hourBlock}>
-                  <Text style={styles.hourLabel}>{formatHour(h.time)}</Text>
-                  <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
-                  <Text style={styles.hourTemp}>{h.temp}°</Text>
-                </View>
-              ))}
+              {todayHours.map((h) => {
+                const isCurrent = parseInt(h.time.slice(11, 13), 10) === new Date().getHours();
+                return (
+                  <View key={h.time} style={[styles.hourBlock, isCurrent && styles.hourBlockCurrent]}>
+                    {isCurrent && <Text style={styles.hourCurrentIndicator}>▼</Text>}
+                    <Text style={styles.hourLabel}>{formatHour(h.time)}</Text>
+                    <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
+                    <Text style={styles.hourTemp}>{h.temp}°</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -377,6 +377,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 4,
     minWidth: 44,
+  },
+  hourBlockCurrent: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+  },
+  hourCurrentIndicator: {
+    fontSize: 10,
+    color: '#fff',
+    marginBottom: 2,
   },
   hourLabel: {
     fontSize: 13,
