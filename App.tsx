@@ -675,6 +675,7 @@ const styles = StyleSheet.create({
   hourlyContainer: {
     flexDirection: 'row',
     paddingVertical: 4,
+    alignSelf: 'flex-start',
   },
   hourBlock: {
     alignItems: 'center',
