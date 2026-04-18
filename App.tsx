@@ -380,7 +380,7 @@ export default function App() {
                 </View>
               </>
             ) : (
-              <>
+              <View style={styles.overviewRow}>
                 <Text style={[styles.overviewLabel, styles.overviewLabelToday]}>Today</Text>
                 <Text style={styles.overviewEmoji}>{getWeatherEmoji(todayDay.weatherCode)}</Text>
                 <Text style={[styles.overviewDesc, styles.overviewDescToday]}>{getWeatherDescription(todayDay.weatherCode)}</Text>
@@ -391,7 +391,7 @@ export default function App() {
                   <Text style={[styles.overviewTempMain, styles.overviewTempMainToday]}>{todayDay.maxTemp}°</Text>
                   <Text style={[styles.overviewTempSub, styles.overviewTempSubToday]}>{todayDay.minTemp}°</Text>
                 </View>
-              </>
+              </View>
             )}
           </Pressable>
         )}
@@ -434,7 +434,7 @@ export default function App() {
                   </View>
                 </>
               ) : (
-                <>
+                <View style={styles.overviewRow}>
                   <Text style={styles.overviewLabel}>{formatDate(item.date)}</Text>
                   <Text style={styles.overviewEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
                   <Text style={styles.overviewDesc}>{getWeatherDescription(item.weatherCode)}</Text>
@@ -445,7 +445,7 @@ export default function App() {
                     <Text style={styles.overviewTempMain}>{item.maxTemp}°</Text>
                     <Text style={styles.overviewTempSub}>{item.minTemp}°</Text>
                   </View>
-                </>
+                </View>
               )}
             </Pressable>
           ) : null;
@@ -618,6 +618,10 @@ const styles = StyleSheet.create({
   },
   overviewDescToday: {
     color: 'rgba(255,255,255,0.9)',
+  },
+  overviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   overviewRight: {
     alignItems: 'flex-end',
