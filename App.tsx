@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -111,6 +111,37 @@ function formatHour(isoTime: string): string {
   if (hour === 0) return '12am';
   if (hour === 12) return '12pm';
   return hour < 12 ? `${hour}am` : `${hour - 12}pm`;
+}
+
+function HourlyScroll({ contentContainerStyle, children }: {
+  contentContainerStyle?: object;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !ref.current) return;
+    const node = (ref.current as any).getScrollableNode?.();
+    if (!node) return;
+    const handler = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      node.scrollLeft += e.deltaY;
+    };
+    node.addEventListener('wheel', handler, { passive: false });
+    return () => node.removeEventListener('wheel', handler);
+  }, []);
+
+  return (
+    <ScrollView
+      ref={ref}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={contentContainerStyle}
+    >
+      {children}
+    </ScrollView>
+  );
 }
 
 export default function App() {
@@ -362,7 +393,7 @@ export default function App() {
             {expandedDayIndex === 0 ? (
               <>
                 <Text style={styles.todayTitle}>Today</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hourlyContainer}>
+                <HourlyScroll contentContainerStyle={styles.hourlyContainer}>
                   {todayHours.map((h) => {
                     const isCurrent = parseInt(h.time.slice(11, 13), 10) === new Date().getHours();
                     return (
@@ -377,7 +408,7 @@ export default function App() {
                       </View>
                     );
                   })}
-                </ScrollView>
+                </HourlyScroll>
               </>
             ) : (
               <View style={styles.overviewRow}>
@@ -419,7 +450,7 @@ export default function App() {
                       </Text>
                     </View>
                   </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hourlyContainer}>
+                  <HourlyScroll contentContainerStyle={styles.hourlyContainer}>
                     {dayHours.map((h) => (
                       <View key={h.time} style={styles.hourBlock}>
                         <Text style={styles.hourLabelDark}>{formatHour(h.time)}</Text>
@@ -431,7 +462,7 @@ export default function App() {
                         )}
                       </View>
                     ))}
-                  </ScrollView>
+                  </HourlyScroll>
                 </>
               ) : (
                 <View style={styles.overviewRow}>
