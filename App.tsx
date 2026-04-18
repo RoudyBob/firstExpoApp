@@ -121,6 +121,12 @@ function HourlyScroll({ contentContainerStyle, initialOffsetX = 0, children }: {
   const ref = useRef<ScrollView>(null);
 
   useEffect(() => {
+    if (initialOffsetX > 0 && ref.current) {
+      ref.current.scrollTo({ x: initialOffsetX, animated: false });
+    }
+  }, [initialOffsetX]);
+
+  useEffect(() => {
     if (Platform.OS !== 'web' || !ref.current) return;
     const node = (ref.current as any).getScrollableNode?.();
     if (!node) return;
@@ -139,7 +145,6 @@ function HourlyScroll({ contentContainerStyle, initialOffsetX = 0, children }: {
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={contentContainerStyle}
-      contentOffset={{ x: initialOffsetX, y: 0 }}
     >
       {children}
     </ScrollView>
