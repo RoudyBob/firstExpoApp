@@ -336,16 +336,16 @@ export default function App() {
         )}
 
         {!loading && current && forecast[0] && (
-          <View style={styles.currentCard}>
-            <Text style={[styles.rowLabel, styles.rowLabelNow]}>Now</Text>
-            <Text style={styles.rowEmoji}>{getWeatherEmoji(current.weatherCode)}</Text>
-            <Text style={styles.rowDesc}>{getWeatherDescription(current.weatherCode)}</Text>
-            {forecast[0].precipProbMax > 0 && (
-              <Text style={styles.rowPrecip}>💧{forecast[0].precipProbMax}%</Text>
-            )}
-            <View style={styles.rowTemps}>
-              <Text style={styles.rowTempMain}>{current.temp}°</Text>
-              <Text style={styles.rowTempSub}>FL {current.feelsLike}°</Text>
+          <View style={styles.overviewCard}>
+            <Text style={[styles.overviewLabel, styles.overviewLabelNow]}>Now</Text>
+            <Text style={styles.overviewEmoji}>{getWeatherEmoji(current.weatherCode)}</Text>
+            <Text style={styles.overviewDesc}>{getWeatherDescription(current.weatherCode)}</Text>
+            <View style={styles.overviewRight}>
+              {forecast[0].precipProbMax > 0 && (
+                <Text style={styles.overviewPrecip}>💧{forecast[0].precipProbMax}%</Text>
+              )}
+              <Text style={styles.overviewTempMain}>{current.temp}°</Text>
+              <Text style={styles.overviewTempSub}>FL {current.feelsLike}°</Text>
             </View>
           </View>
         )}
@@ -381,15 +381,15 @@ export default function App() {
               </>
             ) : (
               <>
-                <Text style={[styles.rowLabel, styles.rowLabelToday]}>Today</Text>
-                <Text style={styles.rowEmoji}>{getWeatherEmoji(todayDay.weatherCode)}</Text>
-                <Text style={[styles.rowDesc, styles.rowDescToday]}>{getWeatherDescription(todayDay.weatherCode)}</Text>
-                {todayDay.precipProbMax > 0 && (
-                  <Text style={[styles.rowPrecip, styles.rowPrecipToday]}>💧{todayDay.precipProbMax}%</Text>
-                )}
-                <View style={styles.rowTemps}>
-                  <Text style={[styles.rowTempMain, styles.rowTempMainToday]}>{todayDay.maxTemp}°</Text>
-                  <Text style={[styles.rowTempSub, styles.rowTempSubToday]}>{todayDay.minTemp}°</Text>
+                <Text style={[styles.overviewLabel, styles.overviewLabelToday]}>Today</Text>
+                <Text style={styles.overviewEmoji}>{getWeatherEmoji(todayDay.weatherCode)}</Text>
+                <Text style={[styles.overviewDesc, styles.overviewDescToday]}>{getWeatherDescription(todayDay.weatherCode)}</Text>
+                <View style={styles.overviewRight}>
+                  {todayDay.precipProbMax > 0 && (
+                    <Text style={[styles.overviewPrecip, styles.overviewPrecipToday]}>💧{todayDay.precipProbMax}%</Text>
+                  )}
+                  <Text style={[styles.overviewTempMain, styles.overviewTempMainToday]}>{todayDay.maxTemp}°</Text>
+                  <Text style={[styles.overviewTempSub, styles.overviewTempSubToday]}>{todayDay.minTemp}°</Text>
                 </View>
               </>
             )}
@@ -435,15 +435,15 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <Text style={styles.rowLabel}>{formatDate(item.date)}</Text>
-                  <Text style={styles.rowEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
-                  <Text style={styles.rowDesc}>{getWeatherDescription(item.weatherCode)}</Text>
-                  {item.precipProbMax > 0 && (
-                    <Text style={styles.rowPrecip}>💧{item.precipProbMax}%</Text>
-                  )}
-                  <View style={styles.rowTemps}>
-                    <Text style={styles.rowTempMain}>{item.maxTemp}°</Text>
-                    <Text style={styles.rowTempSub}>{item.minTemp}°</Text>
+                  <Text style={styles.overviewLabel}>{formatDate(item.date)}</Text>
+                  <Text style={styles.overviewEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
+                  <Text style={styles.overviewDesc}>{getWeatherDescription(item.weatherCode)}</Text>
+                  <View style={styles.overviewRight}>
+                    {item.precipProbMax > 0 && (
+                      <Text style={styles.overviewPrecip}>💧{item.precipProbMax}%</Text>
+                    )}
+                    <Text style={styles.overviewTempMain}>{item.maxTemp}°</Text>
+                    <Text style={styles.overviewTempSub}>{item.minTemp}°</Text>
                   </View>
                 </>
               )}
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingHorizontal: 4,
   },
-  currentCard: {
+  overviewCard: {
     backgroundColor: '#fff',
     borderRadius: 14,
     padding: 16,
@@ -594,56 +594,56 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  rowLabel: {
+  overviewLabel: {
     width: 90,
     fontSize: 14,
     fontWeight: '600',
     color: '#555',
   },
-  rowLabelNow: {
+  overviewLabelNow: {
     color: '#4A90D9',
     fontWeight: '700',
   },
-  rowLabelToday: {
+  overviewLabelToday: {
     color: '#fff',
   },
-  rowEmoji: {
+  overviewEmoji: {
     fontSize: 24,
     marginRight: 10,
   },
-  rowDesc: {
+  overviewDesc: {
     flex: 1,
     fontSize: 13,
     color: '#666',
   },
-  rowDescToday: {
+  overviewDescToday: {
     color: 'rgba(255,255,255,0.9)',
   },
-  rowPrecip: {
-    fontSize: 13,
-    color: '#5b9bd5',
-    marginRight: 8,
-  },
-  rowPrecipToday: {
-    color: 'rgba(255,255,255,0.9)',
-  },
-  rowTemps: {
+  overviewRight: {
     alignItems: 'flex-end',
   },
-  rowTempMain: {
+  overviewPrecip: {
+    fontSize: 12,
+    color: '#5b9bd5',
+    marginBottom: 2,
+  },
+  overviewPrecipToday: {
+    color: 'rgba(255,255,255,0.85)',
+  },
+  overviewTempMain: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1A3C5E',
   },
-  rowTempMainToday: {
+  overviewTempMainToday: {
     color: '#fff',
   },
-  rowTempSub: {
+  overviewTempSub: {
     fontSize: 12,
     color: '#999',
     marginTop: 2,
   },
-  rowTempSubToday: {
+  overviewTempSubToday: {
     color: 'rgba(255,255,255,0.7)',
   },
   todayCard: {
