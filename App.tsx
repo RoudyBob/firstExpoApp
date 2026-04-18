@@ -18,17 +18,26 @@ const LAST_ZIP_KEY = 'lastZipcode';
 const FAVORITES_KEY = 'favorites';
 const MAX_FAVORITES = 5;
 
+type CurrentConditions = {
+  temp: number;
+  feelsLike: number;
+  weatherCode: number;
+};
+
 type DayForecast = {
   date: string;
   maxTemp: number;
   minTemp: number;
   weatherCode: number;
+  precipProbMax: number;
 };
 
 type HourForecast = {
   time: string;
   temp: number;
+  feelsLike: number;
   weatherCode: number;
+  precipProb: number;
 };
 
 type Favorite = {
@@ -107,6 +116,7 @@ function formatHour(isoTime: string): string {
 export default function App() {
   const [zipInput, setZipInput] = useState('');
   const [cityName, setCityName] = useState('');
+  const [current, setCurrent] = useState<CurrentConditions | null>(null);
   const [forecast, setForecast] = useState<DayForecast[]>([]);
   const [hourlyByDay, setHourlyByDay] = useState<HourForecast[][]>([]);
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(0);
@@ -137,6 +147,7 @@ export default function App() {
     setError('');
     setForecast([]);
     setHourlyByDay([]);
+    setCurrent(null);
     setExpandedDayIndex(0);
     setCityName('');
     Keyboard.dismiss();
@@ -155,18 +166,28 @@ export default function App() {
       const city = `${place['place name']}, ${place['state abbreviation']}`;
       setCityName(city);
 
+      const unit = celsius ? 'celsius' : 'fahrenheit';
       const weatherRes = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-          `&daily=weathercode,temperature_2m_max,temperature_2m_min` +
-          `&hourly=weathercode,temperature_2m` +
-          `&temperature_unit=${celsius ? 'celsius' : 'fahrenheit'}&timezone=auto&forecast_days=7`
+          `&current=temperature_2m,apparent_temperature,weathercode` +
+          `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
+          `&hourly=weathercode,temperature_2m,apparent_temperature,precipitation_probability` +
+          `&temperature_unit=${unit}&timezone=auto&forecast_days=7`
       );
       const weatherData = await weatherRes.json();
+
+      setCurrent({
+        temp: Math.round(weatherData.current.temperature_2m),
+        feelsLike: Math.round(weatherData.current.apparent_temperature),
+        weatherCode: weatherData.current.weathercode,
+      });
+
       const days: DayForecast[] = weatherData.daily.time.map((date: string, i: number) => ({
         date,
         maxTemp: Math.round(weatherData.daily.temperature_2m_max[i]),
         minTemp: Math.round(weatherData.daily.temperature_2m_min[i]),
         weatherCode: weatherData.daily.weathercode[i],
+        precipProbMax: weatherData.daily.precipitation_probability_max[i] ?? 0,
       }));
       setForecast(days);
 
@@ -177,7 +198,9 @@ export default function App() {
           .map((time: string, i: number) => ({
             time,
             temp: Math.round(weatherData.hourly.temperature_2m[start + i]),
+            feelsLike: Math.round(weatherData.hourly.apparent_temperature[start + i]),
             weatherCode: weatherData.hourly.weathercode[start + i],
+            precipProb: weatherData.hourly.precipitation_probability[start + i] ?? 0,
           }));
       });
       setHourlyByDay(allHours);
@@ -219,6 +242,7 @@ export default function App() {
   const todayDay = forecast[0];
   const isFavorited = favorites.some((f) => f.zip === zipInput);
   const canAddFavorite = !isFavorited && favorites.length < MAX_FAVORITES;
+  const unit = useCelsius ? '°C' : '°F';
 
   return (
     <KeyboardAvoidingView
@@ -311,6 +335,22 @@ export default function App() {
           </View>
         )}
 
+        {!loading && current && (
+          <View style={styles.currentCard}>
+            <Text style={styles.currentLabel}>Now</Text>
+            <View style={styles.currentBody}>
+              <View style={styles.currentLeft}>
+                <Text style={styles.currentTemp}>{current.temp}°</Text>
+                <Text style={styles.currentFeelsLike}>Feels like {current.feelsLike}°</Text>
+              </View>
+              <View style={styles.currentRight}>
+                <Text style={styles.currentEmoji}>{getWeatherEmoji(current.weatherCode)}</Text>
+                <Text style={styles.currentDesc}>{getWeatherDescription(current.weatherCode)}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {!loading && todayDay && (
           <Pressable
             onPress={() => toggleDay(0)}
@@ -331,6 +371,10 @@ export default function App() {
                         <Text style={styles.hourLabel}>{formatHour(h.time)}</Text>
                         <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
                         <Text style={styles.hourTemp}>{h.temp}°</Text>
+                        <Text style={styles.hourFeelsLike}>FL {h.feelsLike}°</Text>
+                        {h.precipProb > 0 && (
+                          <Text style={styles.hourPrecip}>💧{h.precipProb}%</Text>
+                        )}
                       </View>
                     );
                   })}
@@ -341,6 +385,9 @@ export default function App() {
                 <Text style={[styles.cardDate, styles.cardDateToday]}>Today</Text>
                 <Text style={styles.cardEmoji}>{getWeatherEmoji(todayDay.weatherCode)}</Text>
                 <Text style={[styles.cardDesc, styles.cardDescToday]}>{getWeatherDescription(todayDay.weatherCode)}</Text>
+                {todayDay.precipProbMax > 0 && (
+                  <Text style={styles.cardPrecipToday}>💧{todayDay.precipProbMax}%</Text>
+                )}
                 <View style={styles.cardTemps}>
                   <Text style={styles.todayTempHigh}>{todayDay.maxTemp}°</Text>
                   <Text style={styles.todayTempLow}>{todayDay.minTemp}°</Text>
@@ -364,9 +411,14 @@ export default function App() {
                 <>
                   <View style={styles.expandedHeader}>
                     <Text style={styles.expandedDate}>{formatDate(item.date)}</Text>
-                    <Text style={styles.expandedTemps}>
-                      {item.maxTemp}° / {item.minTemp}°
-                    </Text>
+                    <View style={styles.expandedRight}>
+                      {item.precipProbMax > 0 && (
+                        <Text style={styles.expandedPrecip}>💧{item.precipProbMax}%</Text>
+                      )}
+                      <Text style={styles.expandedTemps}>
+                        {item.maxTemp}° / {item.minTemp}°
+                      </Text>
+                    </View>
                   </View>
                   <View style={styles.hourlyContainer}>
                     {dayHours.map((h) => (
@@ -374,6 +426,10 @@ export default function App() {
                         <Text style={styles.hourLabelDark}>{formatHour(h.time)}</Text>
                         <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
                         <Text style={styles.hourTempDark}>{h.temp}°</Text>
+                        <Text style={styles.hourFeelsLikeDark}>FL {h.feelsLike}°</Text>
+                        {h.precipProb > 0 && (
+                          <Text style={styles.hourPrecipDark}>💧{h.precipProb}%</Text>
+                        )}
                       </View>
                     ))}
                   </View>
@@ -383,6 +439,9 @@ export default function App() {
                   <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
                   <Text style={styles.cardEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
                   <Text style={styles.cardDesc}>{getWeatherDescription(item.weatherCode)}</Text>
+                  {item.precipProbMax > 0 && (
+                    <Text style={styles.cardPrecip}>💧{item.precipProbMax}%</Text>
+                  )}
                   <View style={styles.cardTemps}>
                     <Text style={styles.tempHigh}>{item.maxTemp}°</Text>
                     <Text style={styles.tempLow}>{item.minTemp}°</Text>
@@ -523,6 +582,57 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingHorizontal: 4,
   },
+  currentCard: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  currentLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4A90D9',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  currentBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  currentLeft: {
+    flex: 1,
+  },
+  currentTemp: {
+    fontSize: 52,
+    fontWeight: '700',
+    color: '#1A3C5E',
+    lineHeight: 56,
+  },
+  currentFeelsLike: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 4,
+  },
+  currentRight: {
+    alignItems: 'center',
+    paddingLeft: 16,
+  },
+  currentEmoji: {
+    fontSize: 44,
+  },
+  currentDesc: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+  },
   todayCard: {
     backgroundColor: '#4A90D9',
     borderRadius: 14,
@@ -550,6 +660,11 @@ const styles = StyleSheet.create({
   cardDescToday: {
     color: 'rgba(255,255,255,0.9)',
   },
+  cardPrecipToday: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    marginRight: 8,
+  },
   todayTempHigh: {
     fontSize: 16,
     fontWeight: '700',
@@ -567,7 +682,7 @@ const styles = StyleSheet.create({
   hourBlock: {
     alignItems: 'center',
     paddingVertical: 4,
-    minWidth: 44,
+    minWidth: 48,
   },
   hourBlockCurrent: {
     backgroundColor: 'rgba(255,255,255,0.2)',
@@ -598,6 +713,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1A3C5E',
   },
+  hourFeelsLike: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 2,
+  },
+  hourFeelsLikeDark: {
+    fontSize: 11,
+    color: '#aaa',
+    marginTop: 2,
+  },
+  hourPrecip: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 2,
+  },
+  hourPrecipDark: {
+    fontSize: 11,
+    color: '#5b9bd5',
+    marginTop: 2,
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 14,
@@ -623,6 +758,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A3C5E',
   },
+  expandedRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  expandedPrecip: {
+    fontSize: 13,
+    color: '#5b9bd5',
+  },
   expandedTemps: {
     fontSize: 14,
     fontWeight: '600',
@@ -642,6 +786,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: '#666',
+  },
+  cardPrecip: {
+    fontSize: 13,
+    color: '#5b9bd5',
+    marginRight: 8,
   },
   cardTemps: {
     flexDirection: 'row',
