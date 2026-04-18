@@ -362,7 +362,7 @@ export default function App() {
             {expandedDayIndex === 0 ? (
               <>
                 <Text style={styles.todayTitle}>Today</Text>
-                <View style={styles.hourlyContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hourlyContainer}>
                   {todayHours.map((h) => {
                     const isCurrent = parseInt(h.time.slice(11, 13), 10) === new Date().getHours();
                     return (
@@ -377,7 +377,7 @@ export default function App() {
                       </View>
                     );
                   })}
-                </View>
+                </ScrollView>
               </>
             ) : (
               <View style={styles.overviewRow}>
@@ -419,7 +419,7 @@ export default function App() {
                       </Text>
                     </View>
                   </View>
-                  <View style={styles.hourlyContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hourlyContainer}>
                     {dayHours.map((h) => (
                       <View key={h.time} style={styles.hourBlock}>
                         <Text style={styles.hourLabelDark}>{formatHour(h.time)}</Text>
@@ -431,7 +431,7 @@ export default function App() {
                         )}
                       </View>
                     ))}
-                  </View>
+                  </ScrollView>
                 </>
               ) : (
                 <View style={styles.overviewRow}>
@@ -674,13 +674,12 @@ const styles = StyleSheet.create({
   },
   hourlyContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-evenly',
+    paddingVertical: 4,
   },
   hourBlock: {
     alignItems: 'center',
     paddingVertical: 4,
-    minWidth: 48,
+    width: 56,
   },
   hourBlockCurrent: {
     backgroundColor: 'rgba(255,255,255,0.2)',
