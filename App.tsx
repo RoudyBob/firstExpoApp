@@ -113,8 +113,9 @@ function formatHour(isoTime: string): string {
   return hour < 12 ? `${hour}am` : `${hour - 12}pm`;
 }
 
-function HourlyScroll({ contentContainerStyle, children }: {
+function HourlyScroll({ contentContainerStyle, initialOffsetX = 0, children }: {
   contentContainerStyle?: object;
+  initialOffsetX?: number;
   children: React.ReactNode;
 }) {
   const ref = useRef<ScrollView>(null);
@@ -138,6 +139,7 @@ function HourlyScroll({ contentContainerStyle, children }: {
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={contentContainerStyle}
+      contentOffset={{ x: initialOffsetX, y: 0 }}
     >
       {children}
     </ScrollView>
@@ -393,7 +395,7 @@ export default function App() {
             {expandedDayIndex === 0 ? (
               <>
                 <Text style={styles.todayTitle}>Today</Text>
-                <HourlyScroll contentContainerStyle={styles.hourlyContainer}>
+                <HourlyScroll contentContainerStyle={styles.hourlyContainer} initialOffsetX={new Date().getHours() * 56}>
                   {todayHours.map((h) => {
                     const isCurrent = parseInt(h.time.slice(11, 13), 10) === new Date().getHours();
                     return (
