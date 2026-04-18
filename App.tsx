@@ -15,6 +15,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LAST_ZIP_KEY = 'lastZipcode';
+const FAVORITES_KEY = 'favorites';
 
 type DayForecast = {
   date: string;
@@ -27,6 +28,11 @@ type HourForecast = {
   time: string;
   temp: number;
   weatherCode: number;
+};
+
+type Favorite = {
+  zip: string;
+  city: string;
 };
 
 const WEATHER_DESCRIPTIONS: Record<number, string> = {
@@ -104,14 +110,19 @@ export default function App() {
   const [hourlyByDay, setHourlyByDay] = useState<HourForecast[][]>([]);
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(0);
   const [useCelsius, setUseCelsius] = useState(false);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    AsyncStorage.getItem(LAST_ZIP_KEY).then((saved) => {
-      if (saved) {
-        setZipInput(saved);
-        fetchWeather(saved, useCelsius);
+    Promise.all([
+      AsyncStorage.getItem(FAVORITES_KEY),
+      AsyncStorage.getItem(LAST_ZIP_KEY),
+    ]).then(([savedFavs, savedZip]) => {
+      if (savedFavs) setFavorites(JSON.parse(savedFavs));
+      if (savedZip) {
+        setZipInput(savedZip);
+        fetchWeather(savedZip, useCelsius);
       }
     });
   }, []);
@@ -177,6 +188,22 @@ export default function App() {
     }
   }
 
+  async function toggleFavorite() {
+    if (!cityName || !zipInput) return;
+    const isAlready = favorites.some((f) => f.zip === zipInput);
+    const next = isAlready
+      ? favorites.filter((f) => f.zip !== zipInput)
+      : [...favorites, { zip: zipInput, city: cityName }];
+    setFavorites(next);
+    await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+  }
+
+  async function removeFavorite(zip: string) {
+    const next = favorites.filter((f) => f.zip !== zip);
+    setFavorites(next);
+    await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+  }
+
   function toggleUnit() {
     const next = !useCelsius;
     setUseCelsius(next);
@@ -189,6 +216,7 @@ export default function App() {
 
   const todayHours = hourlyByDay[0] ?? [];
   const todayDay = forecast[0];
+  const isFavorited = favorites.some((f) => f.zip === zipInput);
 
   return (
     <KeyboardAvoidingView
@@ -231,12 +259,52 @@ export default function App() {
           </Pressable>
         </View>
 
+        {favorites.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.favBar}
+            contentContainerStyle={styles.favBarContent}
+          >
+            {favorites.map((fav) => {
+              const isActive = fav.zip === zipInput;
+              return (
+                <Pressable
+                  key={fav.zip}
+                  onPress={() => {
+                    setZipInput(fav.zip);
+                    fetchWeather(fav.zip);
+                  }}
+                  onLongPress={() => removeFavorite(fav.zip)}
+                  style={({ pressed }) => [
+                    styles.favPill,
+                    isActive && styles.favPillActive,
+                    pressed && styles.favPillPressed,
+                  ]}
+                >
+                  <Text
+                    style={[styles.favPillText, isActive && styles.favPillTextActive]}
+                    numberOfLines={1}
+                  >
+                    {fav.city}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        )}
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         {loading && <ActivityIndicator size="large" color="#4A90D9" style={{ marginTop: 32 }} />}
 
         {cityName && !loading && (
-          <Text style={styles.cityName}>{cityName}</Text>
+          <View style={styles.cityRow}>
+            <Text style={styles.cityName}>{cityName}</Text>
+            <Pressable onPress={toggleFavorite} style={styles.starButton}>
+              <Text style={styles.starIcon}>{isFavorited ? '★' : '☆'}</Text>
+            </Pressable>
+          </View>
         )}
 
         {!loading && todayDay && (
@@ -361,7 +429,7 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   input: {
     flex: 1,
@@ -391,17 +459,61 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  favBar: {
+    marginBottom: 10,
+  },
+  favBarContent: {
+    paddingVertical: 2,
+    gap: 8,
+    flexDirection: 'row',
+  },
+  favPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#cce0f5',
+    maxWidth: 160,
+  },
+  favPillActive: {
+    backgroundColor: '#4A90D9',
+    borderColor: '#4A90D9',
+  },
+  favPillPressed: {
+    opacity: 0.75,
+  },
+  favPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1A3C5E',
+  },
+  favPillTextActive: {
+    color: '#fff',
+  },
   error: {
     color: '#D9534F',
     textAlign: 'center',
     marginBottom: 8,
   },
+  cityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
   cityName: {
     fontSize: 20,
     fontWeight: '600',
     color: '#1A3C5E',
-    textAlign: 'center',
-    marginBottom: 12,
+  },
+  starButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  starIcon: {
+    fontSize: 22,
+    color: '#4A90D9',
   },
   scrollContent: {
     paddingBottom: 32,
