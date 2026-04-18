@@ -103,6 +103,7 @@ export default function App() {
   const [forecast, setForecast] = useState<DayForecast[]>([]);
   const [hourlyByDay, setHourlyByDay] = useState<HourForecast[][]>([]);
   const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(0);
+  const [useCelsius, setUseCelsius] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -110,12 +111,12 @@ export default function App() {
     AsyncStorage.getItem(LAST_ZIP_KEY).then((saved) => {
       if (saved) {
         setZipInput(saved);
-        fetchWeather(saved);
+        fetchWeather(saved, useCelsius);
       }
     });
   }, []);
 
-  async function fetchWeather(zip: string) {
+  async function fetchWeather(zip: string, celsius = useCelsius) {
     if (!/^\d{5}$/.test(zip)) {
       setError('Please enter a valid 5-digit US zip code.');
       return;
@@ -146,7 +147,7 @@ export default function App() {
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
           `&daily=weathercode,temperature_2m_max,temperature_2m_min` +
           `&hourly=weathercode,temperature_2m` +
-          `&temperature_unit=fahrenheit&timezone=auto&forecast_days=7`
+          `&temperature_unit=${celsius ? 'celsius' : 'fahrenheit'}&timezone=auto&forecast_days=7`
       );
       const weatherData = await weatherRes.json();
       const days: DayForecast[] = weatherData.daily.time.map((date: string, i: number) => ({
@@ -176,6 +177,12 @@ export default function App() {
     }
   }
 
+  function toggleUnit() {
+    const next = !useCelsius;
+    setUseCelsius(next);
+    if (cityName) fetchWeather(zipInput, next);
+  }
+
   function toggleDay(dayIndex: number) {
     setExpandedDayIndex((prev) => (prev === dayIndex ? null : dayIndex));
   }
@@ -194,7 +201,15 @@ export default function App() {
         onScrollBeginDrag={Keyboard.dismiss}
         contentContainerStyle={styles.scrollContent}
       >
-        <Text style={styles.title}>Weather Forecast</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Weather Forecast</Text>
+          <Pressable
+            onPress={toggleUnit}
+            style={({ pressed }) => [styles.unitToggle, pressed && styles.unitTogglePressed]}
+          >
+            <Text style={styles.unitToggleText}>{useCelsius ? '°F' : '°C'}</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.inputRow}>
           <TextInput
@@ -317,12 +332,32 @@ const styles = StyleSheet.create({
     paddingTop: 64,
     paddingHorizontal: 20,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: '#1A3C5E',
-    marginBottom: 20,
-    textAlign: 'center',
+  },
+  unitToggle: {
+    marginLeft: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#4A90D9',
+  },
+  unitTogglePressed: {
+    backgroundColor: '#dceefa',
+  },
+  unitToggleText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4A90D9',
   },
   inputRow: {
     flexDirection: 'row',
