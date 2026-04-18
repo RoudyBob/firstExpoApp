@@ -336,16 +336,16 @@ const styles = StyleSheet.create({
     minWidth: 44,
   },
   hourLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: 'rgba(255,255,255,0.85)',
     marginBottom: 4,
   },
   hourEmoji: {
-    fontSize: 20,
+    fontSize: 26,
     marginBottom: 4,
   },
   hourTemp: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff',
   },
