@@ -335,18 +335,17 @@ export default function App() {
           </View>
         )}
 
-        {!loading && current && (
+        {!loading && current && forecast[0] && (
           <View style={styles.currentCard}>
             <Text style={styles.currentLabel}>Now</Text>
-            <View style={styles.currentBody}>
-              <View style={styles.currentLeft}>
-                <Text style={styles.currentTemp}>{current.temp}°</Text>
-                <Text style={styles.currentFeelsLike}>Feels like {current.feelsLike}°</Text>
-              </View>
-              <View style={styles.currentRight}>
-                <Text style={styles.currentEmoji}>{getWeatherEmoji(current.weatherCode)}</Text>
-                <Text style={styles.currentDesc}>{getWeatherDescription(current.weatherCode)}</Text>
-              </View>
+            <Text style={styles.currentEmoji}>{getWeatherEmoji(current.weatherCode)}</Text>
+            <Text style={styles.currentDesc}>{getWeatherDescription(current.weatherCode)}</Text>
+            {forecast[0].precipProbMax > 0 && (
+              <Text style={styles.currentPrecip}>💧{forecast[0].precipProbMax}%</Text>
+            )}
+            <View style={styles.currentTemps}>
+              <Text style={styles.currentTemp}>{current.temp}°</Text>
+              <Text style={styles.currentFeelsLike}>FL {current.feelsLike}°</Text>
             </View>
           </View>
         )}
@@ -587,6 +586,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
@@ -594,44 +595,37 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   currentLabel: {
-    fontSize: 12,
+    width: 40,
+    fontSize: 14,
     fontWeight: '700',
     color: '#4A90D9',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  currentBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  currentLeft: {
-    flex: 1,
-  },
-  currentTemp: {
-    fontSize: 52,
-    fontWeight: '700',
-    color: '#1A3C5E',
-    lineHeight: 56,
-  },
-  currentFeelsLike: {
-    fontSize: 14,
-    color: '#888',
-    marginTop: 4,
-  },
-  currentRight: {
-    alignItems: 'center',
-    paddingLeft: 16,
   },
   currentEmoji: {
-    fontSize: 44,
+    fontSize: 24,
+    marginRight: 10,
   },
   currentDesc: {
+    flex: 1,
     fontSize: 13,
     color: '#666',
-    textAlign: 'center',
-    marginTop: 4,
+  },
+  currentPrecip: {
+    fontSize: 13,
+    color: '#5b9bd5',
+    marginRight: 8,
+  },
+  currentTemps: {
+    alignItems: 'flex-end',
+  },
+  currentTemp: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A3C5E',
+  },
+  currentFeelsLike: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
   },
   todayCard: {
     backgroundColor: '#4A90D9',
