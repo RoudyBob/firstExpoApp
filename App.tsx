@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LAST_ZIP_KEY = 'lastZipcode';
 const FAVORITES_KEY = 'favorites';
+const MAX_FAVORITES = 5;
 
 type DayForecast = {
   date: string;
@@ -217,6 +218,7 @@ export default function App() {
   const todayHours = hourlyByDay[0] ?? [];
   const todayDay = forecast[0];
   const isFavorited = favorites.some((f) => f.zip === zipInput);
+  const canAddFavorite = !isFavorited && favorites.length < MAX_FAVORITES;
 
   return (
     <KeyboardAvoidingView
@@ -301,9 +303,11 @@ export default function App() {
         {cityName && !loading && (
           <View style={styles.cityRow}>
             <Text style={styles.cityName}>{cityName}</Text>
-            <Pressable onPress={toggleFavorite} style={styles.starButton}>
-              <Text style={styles.starIcon}>{isFavorited ? '★' : '☆'}</Text>
-            </Pressable>
+            {(isFavorited || canAddFavorite) && (
+              <Pressable onPress={toggleFavorite} style={styles.starButton}>
+                <Text style={styles.starIcon}>{isFavorited ? '★' : '☆'}</Text>
+              </Pressable>
+            )}
           </View>
         )}
 
