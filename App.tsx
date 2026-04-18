@@ -620,6 +620,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
   },
   overviewRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
