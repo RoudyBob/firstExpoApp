@@ -101,7 +101,8 @@ export default function App() {
   const [zipInput, setZipInput] = useState('');
   const [cityName, setCityName] = useState('');
   const [forecast, setForecast] = useState<DayForecast[]>([]);
-  const [hourlyForecast, setHourlyForecast] = useState<HourForecast[]>([]);
+  const [hourlyByDay, setHourlyByDay] = useState<HourForecast[][]>([]);
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -122,7 +123,8 @@ export default function App() {
     setLoading(true);
     setError('');
     setForecast([]);
-    setHourlyForecast([]);
+    setHourlyByDay([]);
+    setSelectedDayIndex(0);
     setCityName('');
     Keyboard.dismiss();
 
@@ -154,16 +156,22 @@ export default function App() {
         weatherCode: weatherData.daily.weathercode[i],
       }));
       setForecast(days);
+
       const currentHour = new Date().getHours();
-      const hours: HourForecast[] = weatherData.hourly.time
-        .slice(0, 24)
-        .map((time: string, i: number) => ({
-          time,
-          temp: Math.round(weatherData.hourly.temperature_2m[i]),
-          weatherCode: weatherData.hourly.weathercode[i],
-        }))
-        .filter((h: HourForecast) => parseInt(h.time.slice(11, 13), 10) >= currentHour);
-      setHourlyForecast(hours);
+      const allHours: HourForecast[][] = days.map((_, dayIndex) => {
+        const start = dayIndex * 24;
+        return weatherData.hourly.time
+          .slice(start, start + 24)
+          .map((time: string, i: number) => ({
+            time,
+            temp: Math.round(weatherData.hourly.temperature_2m[start + i]),
+            weatherCode: weatherData.hourly.weathercode[start + i],
+          }))
+          .filter((h: HourForecast) =>
+            dayIndex !== 0 || parseInt(h.time.slice(11, 13), 10) >= currentHour
+          );
+      });
+      setHourlyByDay(allHours);
       await AsyncStorage.setItem(LAST_ZIP_KEY, zip);
     } catch {
       setError('Failed to fetch weather. Check your connection.');
@@ -171,6 +179,9 @@ export default function App() {
       setLoading(false);
     }
   }
+
+  const selectedHours = hourlyByDay[selectedDayIndex] ?? [];
+  const selectedDay = forecast[selectedDayIndex];
 
   return (
     <KeyboardAvoidingView
@@ -213,11 +224,13 @@ export default function App() {
           <Text style={styles.cityName}>{cityName}</Text>
         )}
 
-        {!loading && hourlyForecast.length > 0 && (
-          <View style={styles.todayCard}>
-            <Text style={styles.todayTitle}>Today</Text>
+        {!loading && selectedHours.length > 0 && selectedDay && (
+          <View style={styles.hourlyCard}>
+            <Text style={styles.hourlyCardTitle}>
+              {selectedDayIndex === 0 ? 'Today' : formatDate(selectedDay.date)}
+            </Text>
             <View style={styles.hourlyContainer}>
-              {hourlyForecast.map((h) => (
+              {selectedHours.map((h) => (
                 <View key={h.time} style={styles.hourBlock}>
                   <Text style={styles.hourLabel}>{formatHour(h.time)}</Text>
                   <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
@@ -228,19 +241,37 @@ export default function App() {
           </View>
         )}
 
-        {forecast.slice(1).map((item) =>
-          !loading ? (
-            <View key={item.date} style={styles.card}>
-              <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
+        {forecast.slice(1).map((item, i) => {
+          const dayIndex = i + 1;
+          const isSelected = selectedDayIndex === dayIndex;
+          return !loading ? (
+            <Pressable
+              key={item.date}
+              onPress={() => setSelectedDayIndex(dayIndex)}
+              style={({ pressed }) => [
+                styles.card,
+                isSelected && styles.cardSelected,
+                pressed && styles.cardPressed,
+              ]}
+            >
+              <Text style={[styles.cardDate, isSelected && styles.cardTextSelected]}>
+                {formatDate(item.date)}
+              </Text>
               <Text style={styles.cardEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
-              <Text style={styles.cardDesc}>{getWeatherDescription(item.weatherCode)}</Text>
+              <Text style={[styles.cardDesc, isSelected && styles.cardTextSelected]}>
+                {getWeatherDescription(item.weatherCode)}
+              </Text>
               <View style={styles.cardTemps}>
-                <Text style={styles.tempHigh}>{item.maxTemp}°</Text>
-                <Text style={styles.tempLow}>{item.minTemp}°</Text>
+                <Text style={[styles.tempHigh, isSelected && styles.cardTextSelected]}>
+                  {item.maxTemp}°
+                </Text>
+                <Text style={[styles.tempLow, isSelected && styles.cardTextSelectedMuted]}>
+                  {item.minTemp}°
+                </Text>
               </View>
-            </View>
-          ) : null
-        )}
+            </Pressable>
+          ) : null;
+        })}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -308,7 +339,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingHorizontal: 4,
   },
-  todayCard: {
+  hourlyCard: {
     backgroundColor: '#4A90D9',
     borderRadius: 14,
     padding: 16,
@@ -319,7 +350,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  todayTitle: {
+  hourlyCardTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
@@ -362,6 +393,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  cardSelected: {
+    backgroundColor: '#4A90D9',
+  },
+  cardPressed: {
+    opacity: 0.85,
+  },
   cardDate: {
     width: 90,
     fontSize: 14,
@@ -376,6 +413,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: '#666',
+  },
+  cardTextSelected: {
+    color: '#fff',
+  },
+  cardTextSelectedMuted: {
+    color: 'rgba(255,255,255,0.7)',
   },
   cardTemps: {
     flexDirection: 'row',
