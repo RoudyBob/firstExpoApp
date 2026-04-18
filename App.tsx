@@ -337,15 +337,15 @@ export default function App() {
 
         {!loading && current && forecast[0] && (
           <View style={styles.currentCard}>
-            <Text style={styles.currentLabel}>Now</Text>
-            <Text style={styles.currentEmoji}>{getWeatherEmoji(current.weatherCode)}</Text>
-            <Text style={styles.currentDesc}>{getWeatherDescription(current.weatherCode)}</Text>
+            <Text style={[styles.rowLabel, styles.rowLabelNow]}>Now</Text>
+            <Text style={styles.rowEmoji}>{getWeatherEmoji(current.weatherCode)}</Text>
+            <Text style={styles.rowDesc}>{getWeatherDescription(current.weatherCode)}</Text>
             {forecast[0].precipProbMax > 0 && (
-              <Text style={styles.currentPrecip}>💧{forecast[0].precipProbMax}%</Text>
+              <Text style={styles.rowPrecip}>💧{forecast[0].precipProbMax}%</Text>
             )}
-            <View style={styles.currentTemps}>
-              <Text style={styles.currentTemp}>{current.temp}°</Text>
-              <Text style={styles.currentFeelsLike}>FL {current.feelsLike}°</Text>
+            <View style={styles.rowTemps}>
+              <Text style={styles.rowTempMain}>{current.temp}°</Text>
+              <Text style={styles.rowTempSub}>FL {current.feelsLike}°</Text>
             </View>
           </View>
         )}
@@ -381,15 +381,15 @@ export default function App() {
               </>
             ) : (
               <>
-                <Text style={[styles.cardDate, styles.cardDateToday]}>Today</Text>
-                <Text style={styles.cardEmoji}>{getWeatherEmoji(todayDay.weatherCode)}</Text>
-                <Text style={[styles.cardDesc, styles.cardDescToday]}>{getWeatherDescription(todayDay.weatherCode)}</Text>
+                <Text style={[styles.rowLabel, styles.rowLabelToday]}>Today</Text>
+                <Text style={styles.rowEmoji}>{getWeatherEmoji(todayDay.weatherCode)}</Text>
+                <Text style={[styles.rowDesc, styles.rowDescToday]}>{getWeatherDescription(todayDay.weatherCode)}</Text>
                 {todayDay.precipProbMax > 0 && (
-                  <Text style={styles.cardPrecipToday}>💧{todayDay.precipProbMax}%</Text>
+                  <Text style={[styles.rowPrecip, styles.rowPrecipToday]}>💧{todayDay.precipProbMax}%</Text>
                 )}
-                <View style={styles.cardTemps}>
-                  <Text style={styles.todayTempHigh}>{todayDay.maxTemp}°</Text>
-                  <Text style={styles.todayTempLow}>{todayDay.minTemp}°</Text>
+                <View style={styles.rowTemps}>
+                  <Text style={[styles.rowTempMain, styles.rowTempMainToday]}>{todayDay.maxTemp}°</Text>
+                  <Text style={[styles.rowTempSub, styles.rowTempSubToday]}>{todayDay.minTemp}°</Text>
                 </View>
               </>
             )}
@@ -435,15 +435,15 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
-                  <Text style={styles.cardEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
-                  <Text style={styles.cardDesc}>{getWeatherDescription(item.weatherCode)}</Text>
+                  <Text style={styles.rowLabel}>{formatDate(item.date)}</Text>
+                  <Text style={styles.rowEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
+                  <Text style={styles.rowDesc}>{getWeatherDescription(item.weatherCode)}</Text>
                   {item.precipProbMax > 0 && (
-                    <Text style={styles.cardPrecip}>💧{item.precipProbMax}%</Text>
+                    <Text style={styles.rowPrecip}>💧{item.precipProbMax}%</Text>
                   )}
-                  <View style={styles.cardTemps}>
-                    <Text style={styles.tempHigh}>{item.maxTemp}°</Text>
-                    <Text style={styles.tempLow}>{item.minTemp}°</Text>
+                  <View style={styles.rowTemps}>
+                    <Text style={styles.rowTempMain}>{item.maxTemp}°</Text>
+                    <Text style={styles.rowTempSub}>{item.minTemp}°</Text>
                   </View>
                 </>
               )}
@@ -594,38 +594,57 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  currentLabel: {
-    width: 40,
+  rowLabel: {
+    width: 90,
     fontSize: 14,
-    fontWeight: '700',
-    color: '#4A90D9',
+    fontWeight: '600',
+    color: '#555',
   },
-  currentEmoji: {
+  rowLabelNow: {
+    color: '#4A90D9',
+    fontWeight: '700',
+  },
+  rowLabelToday: {
+    color: '#fff',
+  },
+  rowEmoji: {
     fontSize: 24,
     marginRight: 10,
   },
-  currentDesc: {
+  rowDesc: {
     flex: 1,
     fontSize: 13,
     color: '#666',
   },
-  currentPrecip: {
+  rowDescToday: {
+    color: 'rgba(255,255,255,0.9)',
+  },
+  rowPrecip: {
     fontSize: 13,
     color: '#5b9bd5',
     marginRight: 8,
   },
-  currentTemps: {
+  rowPrecipToday: {
+    color: 'rgba(255,255,255,0.9)',
+  },
+  rowTemps: {
     alignItems: 'flex-end',
   },
-  currentTemp: {
+  rowTempMain: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1A3C5E',
   },
-  currentFeelsLike: {
+  rowTempMainToday: {
+    color: '#fff',
+  },
+  rowTempSub: {
     fontSize: 12,
     color: '#999',
     marginTop: 2,
+  },
+  rowTempSubToday: {
+    color: 'rgba(255,255,255,0.7)',
   },
   todayCard: {
     backgroundColor: '#4A90D9',
@@ -647,26 +666,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginBottom: 12,
-  },
-  cardDateToday: {
-    color: '#fff',
-  },
-  cardDescToday: {
-    color: 'rgba(255,255,255,0.9)',
-  },
-  cardPrecipToday: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.9)',
-    marginRight: 8,
-  },
-  todayTempHigh: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  todayTempLow: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.7)',
   },
   hourlyContainer: {
     flexDirection: 'row',
@@ -765,38 +764,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#555',
-  },
-  cardDate: {
-    width: 90,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#555',
-  },
-  cardEmoji: {
-    fontSize: 24,
-    marginRight: 10,
-  },
-  cardDesc: {
-    flex: 1,
-    fontSize: 13,
-    color: '#666',
-  },
-  cardPrecip: {
-    fontSize: 13,
-    color: '#5b9bd5',
-    marginRight: 8,
-  },
-  cardTemps: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  tempHigh: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A3C5E',
-  },
-  tempLow: {
-    fontSize: 16,
-    color: '#999',
   },
 });
