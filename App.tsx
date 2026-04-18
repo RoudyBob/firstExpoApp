@@ -23,6 +23,12 @@ type DayForecast = {
   weatherCode: number;
 };
 
+type HourForecast = {
+  time: string;
+  temp: number;
+  weatherCode: number;
+};
+
 const WEATHER_DESCRIPTIONS: Record<number, string> = {
   0: 'Clear sky',
   1: 'Mostly clear',
@@ -84,10 +90,18 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+function formatHour(isoTime: string): string {
+  const hour = parseInt(isoTime.slice(11, 13), 10);
+  if (hour === 0) return '12am';
+  if (hour === 12) return '12pm';
+  return hour < 12 ? `${hour}am` : `${hour - 12}pm`;
+}
+
 export default function App() {
   const [zipInput, setZipInput] = useState('');
   const [cityName, setCityName] = useState('');
   const [forecast, setForecast] = useState<DayForecast[]>([]);
+  const [hourlyForecast, setHourlyForecast] = useState<HourForecast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -108,6 +122,7 @@ export default function App() {
     setLoading(true);
     setError('');
     setForecast([]);
+    setHourlyForecast([]);
     setCityName('');
     Keyboard.dismiss();
 
@@ -128,6 +143,7 @@ export default function App() {
       const weatherRes = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
           `&daily=weathercode,temperature_2m_max,temperature_2m_min` +
+          `&hourly=weathercode,temperature_2m` +
           `&temperature_unit=fahrenheit&timezone=auto&forecast_days=7`
       );
       const weatherData = await weatherRes.json();
@@ -138,6 +154,12 @@ export default function App() {
         weatherCode: weatherData.daily.weathercode[i],
       }));
       setForecast(days);
+      const hours: HourForecast[] = weatherData.hourly.time.slice(0, 24).map((time: string, i: number) => ({
+        time,
+        temp: Math.round(weatherData.hourly.temperature_2m[i]),
+        weatherCode: weatherData.hourly.weathercode[i],
+      }));
+      setHourlyForecast(hours);
       await AsyncStorage.setItem(LAST_ZIP_KEY, zip);
     } catch {
       setError('Failed to fetch weather. Check your connection.');
@@ -187,12 +209,25 @@ export default function App() {
           <Text style={styles.cityName}>{cityName}</Text>
         )}
 
-        {forecast.map((item, index) =>
+        {!loading && hourlyForecast.length > 0 && (
+          <View style={styles.todayCard}>
+            <Text style={styles.todayTitle}>Today</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hourlyScroll}>
+              {hourlyForecast.map((h) => (
+                <View key={h.time} style={styles.hourBlock}>
+                  <Text style={styles.hourLabel}>{formatHour(h.time)}</Text>
+                  <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
+                  <Text style={styles.hourTemp}>{h.temp}°</Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {forecast.slice(1).map((item) =>
           !loading ? (
-            <View key={item.date} style={[styles.card, index === 0 && styles.cardToday]}>
-              <Text style={[styles.cardDate, index === 0 && styles.cardDateToday]}>
-                {index === 0 ? 'Today' : formatDate(item.date)}
-              </Text>
+            <View key={item.date} style={styles.card}>
+              <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
               <Text style={styles.cardEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
               <Text style={styles.cardDesc}>{getWeatherDescription(item.weatherCode)}</Text>
               <View style={styles.cardTemps}>
@@ -269,6 +304,45 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingHorizontal: 4,
   },
+  todayCard: {
+    backgroundColor: '#4A90D9',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  todayTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 12,
+  },
+  hourlyScroll: {
+    flexDirection: 'row',
+  },
+  hourBlock: {
+    alignItems: 'center',
+    marginRight: 16,
+    minWidth: 44,
+  },
+  hourLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.85)',
+    marginBottom: 4,
+  },
+  hourEmoji: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  hourTemp: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 14,
@@ -282,17 +356,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  cardToday: {
-    backgroundColor: '#4A90D9',
-  },
   cardDate: {
     width: 90,
     fontSize: 14,
     fontWeight: '600',
     color: '#555',
-  },
-  cardDateToday: {
-    color: '#fff',
   },
   cardEmoji: {
     fontSize: 24,
