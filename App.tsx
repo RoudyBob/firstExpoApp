@@ -102,7 +102,7 @@ export default function App() {
   const [cityName, setCityName] = useState('');
   const [forecast, setForecast] = useState<DayForecast[]>([]);
   const [hourlyByDay, setHourlyByDay] = useState<HourForecast[][]>([]);
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
+  const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -124,7 +124,7 @@ export default function App() {
     setError('');
     setForecast([]);
     setHourlyByDay([]);
-    setSelectedDayIndex(0);
+    setExpandedDayIndex(null);
     setCityName('');
     Keyboard.dismiss();
 
@@ -180,8 +180,11 @@ export default function App() {
     }
   }
 
-  const selectedHours = hourlyByDay[selectedDayIndex] ?? [];
-  const selectedDay = forecast[selectedDayIndex];
+  function toggleDay(dayIndex: number) {
+    setExpandedDayIndex((prev) => (prev === dayIndex ? null : dayIndex));
+  }
+
+  const todayHours = hourlyByDay[0] ?? [];
 
   return (
     <KeyboardAvoidingView
@@ -224,13 +227,11 @@ export default function App() {
           <Text style={styles.cityName}>{cityName}</Text>
         )}
 
-        {!loading && selectedHours.length > 0 && selectedDay && (
-          <View style={styles.hourlyCard}>
-            <Text style={styles.hourlyCardTitle}>
-              {selectedDayIndex === 0 ? 'Today' : formatDate(selectedDay.date)}
-            </Text>
+        {!loading && todayHours.length > 0 && (
+          <View style={styles.todayCard}>
+            <Text style={styles.todayTitle}>Today</Text>
             <View style={styles.hourlyContainer}>
-              {selectedHours.map((h) => (
+              {todayHours.map((h) => (
                 <View key={h.time} style={styles.hourBlock}>
                   <Text style={styles.hourLabel}>{formatHour(h.time)}</Text>
                   <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
@@ -243,32 +244,43 @@ export default function App() {
 
         {forecast.slice(1).map((item, i) => {
           const dayIndex = i + 1;
-          const isSelected = selectedDayIndex === dayIndex;
+          const isExpanded = expandedDayIndex === dayIndex;
+          const dayHours = hourlyByDay[dayIndex] ?? [];
           return !loading ? (
             <Pressable
               key={item.date}
-              onPress={() => setSelectedDayIndex(dayIndex)}
-              style={({ pressed }) => [
-                styles.card,
-                isSelected && styles.cardSelected,
-                pressed && styles.cardPressed,
-              ]}
+              onPress={() => toggleDay(dayIndex)}
+              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
             >
-              <Text style={[styles.cardDate, isSelected && styles.cardTextSelected]}>
-                {formatDate(item.date)}
-              </Text>
-              <Text style={styles.cardEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
-              <Text style={[styles.cardDesc, isSelected && styles.cardTextSelected]}>
-                {getWeatherDescription(item.weatherCode)}
-              </Text>
-              <View style={styles.cardTemps}>
-                <Text style={[styles.tempHigh, isSelected && styles.cardTextSelected]}>
-                  {item.maxTemp}°
-                </Text>
-                <Text style={[styles.tempLow, isSelected && styles.cardTextSelectedMuted]}>
-                  {item.minTemp}°
-                </Text>
-              </View>
+              {isExpanded ? (
+                <>
+                  <View style={styles.expandedHeader}>
+                    <Text style={styles.expandedDate}>{formatDate(item.date)}</Text>
+                    <Text style={styles.expandedTemps}>
+                      {item.maxTemp}° / {item.minTemp}°
+                    </Text>
+                  </View>
+                  <View style={styles.hourlyContainer}>
+                    {dayHours.map((h) => (
+                      <View key={h.time} style={styles.hourBlock}>
+                        <Text style={styles.hourLabelDark}>{formatHour(h.time)}</Text>
+                        <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
+                        <Text style={styles.hourTempDark}>{h.temp}°</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
+                  <Text style={styles.cardEmoji}>{getWeatherEmoji(item.weatherCode)}</Text>
+                  <Text style={styles.cardDesc}>{getWeatherDescription(item.weatherCode)}</Text>
+                  <View style={styles.cardTemps}>
+                    <Text style={styles.tempHigh}>{item.maxTemp}°</Text>
+                    <Text style={styles.tempLow}>{item.minTemp}°</Text>
+                  </View>
+                </>
+              )}
             </Pressable>
           ) : null;
         })}
@@ -339,7 +351,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingHorizontal: 4,
   },
-  hourlyCard: {
+  todayCard: {
     backgroundColor: '#4A90D9',
     borderRadius: 14,
     padding: 16,
@@ -350,7 +362,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  hourlyCardTitle: {
+  todayTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
@@ -371,6 +383,11 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.85)',
     marginBottom: 4,
   },
+  hourLabelDark: {
+    fontSize: 13,
+    color: '#888',
+    marginBottom: 4,
+  },
   hourEmoji: {
     fontSize: 26,
     marginBottom: 4,
@@ -380,24 +397,40 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+  hourTempDark: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A3C5E',
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
-  cardSelected: {
-    backgroundColor: '#4A90D9',
-  },
   cardPressed: {
     opacity: 0.85,
+  },
+  expandedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  expandedDate: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A3C5E',
+  },
+  expandedTemps: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#555',
   },
   cardDate: {
     width: 90,
@@ -413,12 +446,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: '#666',
-  },
-  cardTextSelected: {
-    color: '#fff',
-  },
-  cardTextSelectedMuted: {
-    color: 'rgba(255,255,255,0.7)',
   },
   cardTemps: {
     flexDirection: 'row',
