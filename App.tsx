@@ -159,7 +159,7 @@ export default function App() {
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
           `&daily=weathercode,temperature_2m_max,temperature_2m_min` +
           `&hourly=weathercode,temperature_2m` +
-          `&temperature_unit=${celsius ? 'celsius' : 'fahrenheit'}&timezone=auto&forecast_days=7`
+          `&temperature_unit=${celsius ? 'celsius' : 'fahrenheit'}&timezone=auto&forecast_days=10`
       );
       const weatherData = await weatherRes.json();
       const days: DayForecast[] = weatherData.daily.time.map((date: string, i: number) => ({
