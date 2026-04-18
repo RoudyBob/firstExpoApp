@@ -154,11 +154,15 @@ export default function App() {
         weatherCode: weatherData.daily.weathercode[i],
       }));
       setForecast(days);
-      const hours: HourForecast[] = weatherData.hourly.time.slice(0, 24).map((time: string, i: number) => ({
-        time,
-        temp: Math.round(weatherData.hourly.temperature_2m[i]),
-        weatherCode: weatherData.hourly.weathercode[i],
-      }));
+      const currentHour = new Date().getHours();
+      const hours: HourForecast[] = weatherData.hourly.time
+        .slice(0, 24)
+        .map((time: string, i: number) => ({
+          time,
+          temp: Math.round(weatherData.hourly.temperature_2m[i]),
+          weatherCode: weatherData.hourly.weathercode[i],
+        }))
+        .filter((h: HourForecast) => parseInt(h.time.slice(11, 13), 10) >= currentHour);
       setHourlyForecast(hours);
       await AsyncStorage.setItem(LAST_ZIP_KEY, zip);
     } catch {
@@ -212,7 +216,7 @@ export default function App() {
         {!loading && hourlyForecast.length > 0 && (
           <View style={styles.todayCard}>
             <Text style={styles.todayTitle}>Today</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hourlyScroll}>
+            <View style={styles.hourlyContainer}>
               {hourlyForecast.map((h) => (
                 <View key={h.time} style={styles.hourBlock}>
                   <Text style={styles.hourLabel}>{formatHour(h.time)}</Text>
@@ -220,7 +224,7 @@ export default function App() {
                   <Text style={styles.hourTemp}>{h.temp}°</Text>
                 </View>
               ))}
-            </ScrollView>
+            </View>
           </View>
         )}
 
@@ -321,12 +325,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 12,
   },
-  hourlyScroll: {
+  hourlyContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-evenly',
   },
   hourBlock: {
     alignItems: 'center',
-    marginRight: 16,
+    paddingVertical: 4,
     minWidth: 44,
   },
   hourLabel: {
