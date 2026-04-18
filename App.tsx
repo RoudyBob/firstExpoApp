@@ -102,7 +102,7 @@ export default function App() {
   const [cityName, setCityName] = useState('');
   const [forecast, setForecast] = useState<DayForecast[]>([]);
   const [hourlyByDay, setHourlyByDay] = useState<HourForecast[][]>([]);
-  const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(null);
+  const [expandedDayIndex, setExpandedDayIndex] = useState<number | null>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -124,7 +124,7 @@ export default function App() {
     setError('');
     setForecast([]);
     setHourlyByDay([]);
-    setExpandedDayIndex(null);
+    setExpandedDayIndex(0);
     setCityName('');
     Keyboard.dismiss();
 
@@ -181,6 +181,7 @@ export default function App() {
   }
 
   const todayHours = hourlyByDay[0] ?? [];
+  const todayDay = forecast[0];
 
   return (
     <KeyboardAvoidingView
@@ -223,23 +224,43 @@ export default function App() {
           <Text style={styles.cityName}>{cityName}</Text>
         )}
 
-        {!loading && todayHours.length > 0 && (
-          <View style={styles.todayCard}>
-            <Text style={styles.todayTitle}>Today</Text>
-            <View style={styles.hourlyContainer}>
-              {todayHours.map((h) => {
-                const isCurrent = parseInt(h.time.slice(11, 13), 10) === new Date().getHours();
-                return (
-                  <View key={h.time} style={[styles.hourBlock, isCurrent && styles.hourBlockCurrent]}>
-                    {isCurrent && <Text style={styles.hourCurrentIndicator}>▼</Text>}
-                    <Text style={styles.hourLabel}>{formatHour(h.time)}</Text>
-                    <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
-                    <Text style={styles.hourTemp}>{h.temp}°</Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
+        {!loading && todayDay && (
+          <Pressable
+            onPress={() => toggleDay(0)}
+            style={({ pressed }) => [
+              styles.todayCard,
+              expandedDayIndex !== 0 && styles.todayCardCollapsed,
+              pressed && styles.cardPressed,
+            ]}
+          >
+            {expandedDayIndex === 0 ? (
+              <>
+                <Text style={styles.todayTitle}>Today</Text>
+                <View style={styles.hourlyContainer}>
+                  {todayHours.map((h) => {
+                    const isCurrent = parseInt(h.time.slice(11, 13), 10) === new Date().getHours();
+                    return (
+                      <View key={h.time} style={[styles.hourBlock, isCurrent && styles.hourBlockCurrent]}>
+                        <Text style={styles.hourLabel}>{formatHour(h.time)}</Text>
+                        <Text style={styles.hourEmoji}>{getWeatherEmoji(h.weatherCode)}</Text>
+                        <Text style={styles.hourTemp}>{h.temp}°</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.cardDate, styles.cardDateToday]}>Today</Text>
+                <Text style={styles.cardEmoji}>{getWeatherEmoji(todayDay.weatherCode)}</Text>
+                <Text style={[styles.cardDesc, styles.cardDescToday]}>{getWeatherDescription(todayDay.weatherCode)}</Text>
+                <View style={styles.cardTemps}>
+                  <Text style={styles.todayTempHigh}>{todayDay.maxTemp}°</Text>
+                  <Text style={styles.todayTempLow}>{todayDay.minTemp}°</Text>
+                </View>
+              </>
+            )}
+          </Pressable>
         )}
 
         {forecast.slice(1).map((item, i) => {
@@ -362,11 +383,30 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  todayCardCollapsed: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   todayTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: '#fff',
     marginBottom: 12,
+  },
+  cardDateToday: {
+    color: '#fff',
+  },
+  cardDescToday: {
+    color: 'rgba(255,255,255,0.9)',
+  },
+  todayTempHigh: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  todayTempLow: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.7)',
   },
   hourlyContainer: {
     flexDirection: 'row',
@@ -382,11 +422,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 10,
     paddingHorizontal: 6,
-  },
-  hourCurrentIndicator: {
-    fontSize: 10,
-    color: '#fff',
-    marginBottom: 2,
   },
   hourLabel: {
     fontSize: 13,
