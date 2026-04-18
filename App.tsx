@@ -580,6 +580,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
     paddingHorizontal: 4,
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
   overviewCard: {
     backgroundColor: '#fff',
