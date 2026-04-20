@@ -132,6 +132,9 @@ function HourlyScroll({ contentContainerStyle, initialOffsetX = 0, children }: {
     if (!node) return;
     const handler = (e: WheelEvent) => {
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      const atLeftEdge = node.scrollLeft <= 0 && e.deltaY < 0;
+      const atRightEdge = node.scrollLeft + node.clientWidth >= node.scrollWidth - 1 && e.deltaY > 0;
+      if (atLeftEdge || atRightEdge) return;
       e.preventDefault();
       node.scrollLeft += e.deltaY;
     };
